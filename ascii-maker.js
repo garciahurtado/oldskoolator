@@ -14,6 +14,10 @@ load("fx:base.js");
 load("fx:controls.js");
 load("fx:graphics.js");
 
+load("charsets.js");
+load("pixel-utils.js");
+load("ascii-char.js");
+
 /**
  * Desktop app which parses a raster image, and converts it to an ASCII art version of it.
  * 
@@ -83,27 +87,50 @@ function start(stage) {
     tabs.tabClosingPolicy = TabPane.TabClosingPolicy.UNAVAILABLE;
     outerBox.children.add(tabs);
 
+    // Tab 1
     var tab1 = new Tab();
     tab1.text = "Character Set";
     var tab1Content = new VBox();
+    tab1Content.styleClass.add("padded");
     tab1.setContent(tab1Content);
     tabs.tabs.add(tab1);
 
-    var tab2 = new Tab();
-    tab2.text = "Image";
-    var tab2Content = new VBox();
-    tab2.setContent(tab2Content);
-    tabs.tabs.add(tab2);
+    var tab1Content2 = new HBox();
+    tab1Content2.styleClass.add("padded");
+
+    var charsetLabel = new Label("Charset");
+    var charsetCombo = new ComboBox();
+    charsetCombo.onAction = function(){
+        charImages = loadCharset(charsetCombo.selectionModel.selectedItem, ctx);
+    }
+    tab1Content2.children.add(charsetLabel);
+    tab1Content2.children.add(charsetCombo);
+
+    tab1Content.children.add(tab1Content2);
 
     // Image view of the character set loaded
     var charsetPreview = new Canvas();
     charsetPreview.height = 300;
     charsetPreview.width = 500;
     ctx = charsetPreview.getGraphicsContext2D();
-    ctx.setFill(Color.rgb(200,200,200));
-    ctx.fillRect(0,0,500,300);
+    clearCanvas(ctx);
+
+    var charsets = loadCharsetNames();
+    for each(charset in charsets){
+        print (charset);
+        charsetCombo.items.addAll(charset.charset);
+    }
+    charImages = loadCharset(charsets[0].charset, ctx);
+    charsetCombo.value = charsets[0].charset;
 
     tab1Content.children.add(charsetPreview);
+
+    // Tab2
+    var tab2 = new Tab();
+    tab2.text = "Image";
+    var tab2Content = new VBox();
+    tab2.setContent(tab2Content);
+    tabs.tabs.add(tab2);
 
     // User provided image
     var imagePreview = new Canvas();
@@ -119,7 +146,6 @@ function start(stage) {
 
     stage.show();
 
-    loadCharSets(ctx);
 }
 
 /**
@@ -153,7 +179,7 @@ function start(stage) {
             ctx.fillRect(x, y, charWidth, charHeight);
 
             // Restore the block to the one from the original image
-            var newPixels = convertPixelBlock(blockPixels, charWidth, charHeight);
+            var newPixels = convertPixelsToChar(blockPixels, charWidth, charHeight);
             ctx.pixelWriter.setPixels(x, y, charWidth, charHeight, format, newPixels, imageStride);
         };
     };
@@ -162,149 +188,32 @@ function start(stage) {
 /**
  * Takes a block of pixels as input and returns the best matching ASCII character in the existing charset
  */
-function convertPixelBlock(inputBlock, width, height){
-    var pixelBlock = pixelize(inputBlock, width, height, 4, 4);
-    var matchingBlock = inputBlock;
-
-    for each(var oneChar in charImages){
-        if(pixelBlock.compareTo(oneChar) == 0) { // equal
-            matchingBlock = oneChar;
-        }
-    }
-
-    return matchingBlock;
-}
-
-/**
- * Downsamples an image (pixel array) using nearest neighbor sampling.
- *
- * It copies one pixel at a time from the original image, skipping every "sampleLevel" pixels, 
- * which are treated as "filler" pixels and colored according to its nearest neighbor sampled pixel.
- *
- * ex:
- * sampleLevel 2
- *
- * @#@#@#@#
- * ########
- * @#@#@#@#
- * ########
- *
- * sampleLevel 3
- *
- * @##@##@##
- * #########
- * #########
- * @##@##@##
- *
- * @: sampled
- * #: filler
- * 
- * @inputPixels: ByteBuffer with the original pixel data
- * @width / height: dimensions of the original image
- * @sampleLevel: how many pixels to skip between samples. The higher this number, the more pixelated the 
- * resulting image
- * @pixelSize : size of one individual pixel (in bytes)
- */
-function pixelize(inputPixels, width, height, sampleLevel, pixelSize){
-    var newPixels = ByteBuffer.allocate(width * height * pixelSize); // 4 = RGBA format
-    var inputPixel;
-    var newPixel;
-    var inputRow = [];
+function convertPixelsToChar(inputBlock, width, height){
+    var level = 1;
+    var found = false;
+    var pixelBlock = pixelize(inputBlock, width, height, level, 4);
     
-    // For every row...
-    for (var y = 0; y < height; y++) {
-        // For every column...
-        for (var x = 0; x < width; x++) {
-            var index = (y * height) + x;
-            
-            if((x % sampleLevel == 0)){
-                if((y % sampleLevel == 0)){
-                    if(x == 0){
-                        inputRow = [];
-                    }
-                    inputPixel = clampColor(inputPixels.getInt(index * pixelSize), 50);
-                    newPixel = inputPixel;
-                    inputRow.push(newPixel);
-                } else {
-                    newPixel = inputRow[x]; // use the pixel from the previous row
-                }
-            } else {
-                newPixel = newPixel; // Keep using the last pixel we sampled on the previous column
-                inputRow.push(newPixel);
+    // Increase the level of pixelation x 2 every loop, until we find a match
+    pixelation:
+    for(var level = 1; level <= 8; level = level * 2){
+
+        for each(var oneChar in charImages){
+            oneChar.setVersion(level);
+            pixelBlock = pixelize(inputBlock, width, height, level, 4);
+    
+            if(oneChar.isEqual(pixelBlock)) { // equal
+                oneChar.setVersion(1);
+                matchingBlock = oneChar.pixels;
+                found = true;
+                break pixelation;
             }
-            newPixels.putInt(newPixel);
-
         }
-    };
-
-    // since we've been writing to this buffer, flip it before returning it
-    newPixels.flip(); 
-
-    return newPixels;
-}
-
-/**
- * "Clamps" the value of an BGRA pixel (provided as an int32) to one of either complete white or 
- * complete black.
- *
- * Uses the formula for luminance: Y = (0.2126*R + 0.7152*G + 0.0722*B)
- *
- * @param pixel: Pixel data as an int32, in BGRA format (blue, green, red, alpha)
- * @param threshold: (0-255) If the total luminance is under this threshold, it will get rounded down to
- * black, otherwise, white is returned.
- */
-function clampColor(pixel, threshold){
-    var blue = (pixel & 0xFF000000) >> 24;
-    var green = (pixel & 0x00FF0000) >> 16;
-    var red = (pixel & 0x0000FF00) >> 8;
-    var luminance = (0.2126*red + 0.7152*green + 0.0722*blue);
-
-    if(luminance > threshold){
-        return 0xFFFFFFFF; // white
-    } else {
-        return 0x000000FF; // black
     }
-}
 
-/**
- * Load the bitmaps for each ASCII character set
- */
-function loadCharSets(ctx) {
-   
-    // Read in all character set images in the /res/ directory
-    var rootPath = './res/charsets/';
-    var stream = Files.newDirectoryStream(Paths.get(rootPath));
-
-    for each(path in stream){
-        var file = new File(path);
-        var image = loadImageFile(file.toURI());
-        print("Charset loaded (width: " + image.width + ", height: " + image.height + ")");
-
-        // Slice up the charset map into it's individual characters
-        var pixels = image.getPixelReader();
-        var format = PixelFormat.getByteBgraInstance();
-
-        // For each character in charset map
-        for (var x = 0; x < image.width / charWidth; x++) {
-            var newCharPixels = ByteBuffer.allocate(charWidth * charHeight * 4); 
-            pixels.getPixels(x * charWidth, 0, charWidth, charHeight, format, newCharPixels, imageStride);
-
-            var oneByte;
-            charImages.push(newCharPixels); 
-        }
-
-        var x = 0;
-        var charsetPreviewImage = new WritableImage(500, 500);
-        var imageWriter = charsetPreviewImage.getPixelWriter();
-
-        // Display the individual characters of the charmap on the screen
-        for each(character in charImages){
-            print("Character: " + character.toString());
-            imageWriter.setPixels(x, 0, charWidth, charHeight, format, character, imageStride);
-            x += 16; // leave 8px padding between characters
-        }
-
-        ctx.drawImage(charsetPreviewImage, 8, 8);
+    if(found){
+        return matchingBlock;
+    } else {
+        return inputBlock;
     }
 }
 

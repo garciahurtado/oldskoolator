@@ -6,3 +6,7 @@
     -fx-font-size: 12px; /* all the same except this newly added one */
     -fx-label-padding: 0px 5px;
 }
+
+.padded {
+  -fx-spacing: 10px;
+}

@@ -13,6 +13,7 @@ var System = java.lang.System;
 load("fx:base.js");
 load("fx:controls.js");
 load("fx:graphics.js");
+load("fx:fxml.js");
 
 load("charsets.js");
 load("pixel-utils.js");
@@ -46,13 +47,56 @@ var imageStride = charWidth * 4;
 function start(stage) {
 	print("Java version : " + System.getProperty("java.version"));
 
-    var root = new StackPane();
+    var layout = new File(__DIR__ + "layout.fxml");
+    var root = FXMLLoader.load(layout.toURL());
+
+    // var root = new StackPane();
     stage.scene = new Scene(root, 520, 670);
 
     // Load FX CSS file
     var cssFile = new File(__DIR__ + "style.css");
     stage.scene.stylesheets.add(cssFile.toURI().toString());
 
+    attachListeners(stage);
+    stage.show();
+}
+
+/**
+ * Attach listeners to the UI (buttons, pulldowns, etc..)
+ */
+function attachListeners(stage) {
+    var charsetPreview = stage.scene.lookup("#charsetPreview").graphicsContext2D;
+    clearCanvas(charsetPreview); 
+
+    var userImage = stage.scene.lookup("#userImage");
+    stage.scene.lookup("#loadImage").onAction = function(){
+        openFileBrowser(stage, userImage.graphicsContext2D);
+    };
+
+    var charsetCombo = stage.scene.lookup("#charsetSelect");
+    charsetCombo.onAction = function(){
+        print("Selected");
+        charImages = loadCharset(charsetCombo.selectionModel.selectedItem, charsetPreview);
+    }
+
+    var charsets = loadCharsetNames();
+    for each(charset in charsets){
+        charsetCombo.items.addAll(charset.charset);
+    }
+    charImages = loadCharset(charsets[0].charset, charsetPreview);
+    charsetCombo.value = charsets[0].charset;
+
+    stage.scene.lookup("#convert").onAction = function(){
+        convertImage(userImage, charImages);
+    }
+
+    stage.scene.lookup("#save").onAction = function(){
+        openFileSave(stage, userImage.graphicsContext2D);
+    }
+}
+
+function createLayout () {
+    
     stage.title = "ASCII Art Maker";
 
     var outerBox = new VBox(6);
@@ -66,7 +110,7 @@ function start(stage) {
     outerBox.children.add(title);
 
     // Buttons
-    var fileButton = new Button();
+    var fileButton = new Button(); // # loadImage
     fileButton.text = "Load image...";
 
     fileButton.onAction = function(){
@@ -99,7 +143,7 @@ function start(stage) {
     tab1Content2.styleClass.add("padded");
 
     var charsetLabel = new Label("Charset");
-    var charsetCombo = new ComboBox();
+    var charsetCombo = new ComboBox(); // #charsetSelect
     charsetCombo.onAction = function(){
         charImages = loadCharset(charsetCombo.selectionModel.selectedItem, ctx);
     }
@@ -109,7 +153,7 @@ function start(stage) {
     tab1Content.children.add(tab1Content2);
 
     // Image view of the character set loaded
-    var charsetPreview = new Canvas();
+    var charsetPreview = new Canvas(); // #charsetPreview
     charsetPreview.height = 300;
     charsetPreview.width = 500;
     ctx = charsetPreview.getGraphicsContext2D();
@@ -133,18 +177,16 @@ function start(stage) {
     tabs.tabs.add(tab2);
 
     // User provided image
-    var imagePreview = new Canvas();
+    var imagePreview = new Canvas(); // #userImage
     imagePreview.name = "userImage";
     imagePreview.width = 512;
     imagePreview.height = 512;
     tab2Content.children.add(imagePreview);
-    var convertButton = new Button("Convert");
+    var convertButton = new Button("Convert"); // #convert
     convertButton.onAction = function(){
         convertImage(imagePreview, charImages);
     }
     tab2Content.children.add(convertButton);
-
-    stage.show();
 
 }
 

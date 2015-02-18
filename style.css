@@ -3,10 +3,14 @@
     -fx-background-color: transparent;    
     -fx-alignment: CENTER;
     -fx-text-fill: -fx-text-base-color;
-    -fx-font-size: 12px; /* all the same except this newly added one */
-    -fx-label-padding: 0px 5px;
+    -fx-font-size: 12px;
+    -fx-label-padding: 0px 10px;
 }
 
 .padded {
   -fx-spacing: 10px;
+}
+
+.grey-box {
+  -fx-background-color: #EEEEEE;
 }

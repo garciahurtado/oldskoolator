@@ -46,7 +46,7 @@ function pixelize(inputPixels, width, height, sampleLevel, pixelSize){
                     if(x == 0){
                         inputRow = [];
                     }
-                    inputPixel = clampColor(inputPixels.getInt(index * pixelSize), 50);
+                    inputPixel = clampColor(inputPixels.getInt(index * pixelSize), 100);
                     newPixel = inputPixel;
                     inputRow.push(newPixel);
                 } else {

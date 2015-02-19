@@ -12,7 +12,7 @@ function AsciiChar(pixels, width, height){
   this.originalPixels = pixels;
   this.versions = []
   this.versions[0] = pixels;
-  this.generateVersions([1,2,4,8])
+  this.generateVersions([1,2,4,8]);
 }
 
 /**
@@ -29,17 +29,32 @@ AsciiChar.prototype.generateVersions = function(levels) {
 /**
  * Set this characters pixels to a specific downsampled version (previously generated)
  */
-AsciiChar.prototype.setVersion = function(level){
+AsciiChar.prototype.setPixelation = function(level){
   this.pixels = this.versions[level];
+  this.pixels.rewind();
 }
 
 /**
- * Compare the pixels to another set of pixels (as a ByteStream) to see if they are the same
+ * Compare the pixels to another set of pixels (provided as a ByteStream) to see if they are exactly the same
  */
 AsciiChar.prototype.isEqual = function(pixels){
-  if(this.pixels.compareTo(pixels) == 0){
-    return true;
-  } else {
-    return false;
+  return this.pixels.equals(pixels);
+}
+
+/**
+ * Fuzzy match which returns an integer representing the level of likeness between the input pixels
+ * and the character. Zero represents a perfect match, every pixel that is different adds -1.
+ */
+AsciiChar.prototype.findDifferences = function(blockPixels){
+  var diff = 0;
+
+  blockPixels.rewind();
+
+  for (var i = 0; i < blockPixels.limit(); i++) {
+    if(blockPixels.get() != this.pixels.get()){
+      diff -= 1;
+    }
   }
+
+  return diff;
 }

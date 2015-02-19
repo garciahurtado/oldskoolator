@@ -68,14 +68,75 @@ function loadCharset(filename, ctx) {
     }
 
     ctx.drawImage(charsetPreviewImage, 8, 8);
+    print("Total: " + charImages.length + " characters in charset");
 
     return charImages;
 }
 
+
 /**
- * Clear the charset preview image (use when switching charsets)
+ * Recursive function which calls itself with increasing levels of resolution until 
+ * either a perfect match is found between the input pixels and the character set.
+ *
+ * If no perfect match is found, a fuzzy match will be performed to return the closest
+ * matching character.
  */
-function clearCanvas(ctx){
-    ctx.setFill(Color.rgb(200,200,200));
-    ctx.fillRect(0,0,500,300);
+function findMatchingCharacter(inputBlock, charset, width, height, pixelation){
+    var MIN_LEVEL = 1;
+    var MAX_LEVEL = 4;
+
+    inputBlock.rewind();
+    var lowresInputBlock = pixelize(inputBlock, width, height, pixelation, 4, false);
+    
+    var matches = [];
+    for each(var character in charset){
+        character.setPixelation(pixelation);
+        if(character.isEqual(lowresInputBlock)){
+            matches.push(character);
+        }
+    }
+
+    var matchCount = matches.length;
+    // print("Matches count: " + matches.length + " Charset size: " + charset.length);
+
+    // No exact matches were found, so we may need to resort to fuzzy match
+    if(matchCount == 0){
+        // We are at the lowest resolution (max. pixelation), so there's no hope for a fuzzy match.
+        // Just return the first character in the set.
+        if(pixelation == MAX_LEVEL){ 
+            return charset[0];
+        } else {
+            return findClosestMatch(inputBlock, charset, width, height);
+        }
+    } else if(matchCount == 1){ // best case scenario: single perfect match
+        return matches[0];
+    } else if(matchCount > 1){ // more than one match, increase resolution up to the maximum (min. pixelation)
+        if(pixelation == MIN_LEVEL){
+            return matches[0];
+        } else {
+            return findMatchingCharacter(inputBlock, matches, width, height, pixelation / 2);
+        }
+    }
 }
+
+/**
+ * Given a pixel block and a set of characters, find the one that is the closest pixel
+ * per pixel match, without using pixelation.
+ */
+function findClosestMatch(inputBlock, charset){
+    var bestMatch = charset[0];
+    var bestScore = -10000;
+
+    for each(character in charset){
+        character.setPixelation(1); // no pixelation is used for this comparison
+        var score = character.findDifferences(inputBlock);
+        if(score > bestScore){
+            bestMatch = character;
+            bestScore = score;
+        }
+    }
+
+    return bestMatch;
+}
+
+

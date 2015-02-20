@@ -25,6 +25,8 @@ load("pixel-utils.js");
 load("ascii-char.js");
 
 /**
+ * ==== Olskulator ====
+ *
  * Desktop app which parses a raster image, and converts it to an ASCII art version of it.
  * 
  * It uses the JavaFX packages from Java 8. 
@@ -33,7 +35,7 @@ load("ascii-char.js");
  * Launch with:
  * jjs ascii-reader.js -fx
  *
- * @author Garcia Hurtado
+ * @author Garcia Hurtado <ghurtado@gmail.com>
  */
 
 /**
@@ -141,7 +143,7 @@ function attachListeners(stage) {
             ctx.setFill(Color.rgb(255,0,0));
             ctx.fillRect(x, y, charWidth, charHeight);
 
-            var blackWhitePixels = decolorize(blockPixels, 4);
+            var blackWhitePixels = decolorize(blockPixels, 1); // TODO: make sampling level configurable in UI
             var matchCharacter = findMatchingCharacter(blackWhitePixels, charImages, charWidth, charHeight, 4);
             matchCharacter.setPixelation(1);
 
@@ -153,7 +155,7 @@ function attachListeners(stage) {
             var coloredPixels = colorize(matchCharacter.pixels, colorLight, colorDark);
 
             ctx.pixelWriter.setPixels(x, y, charWidth, charHeight, format, coloredPixels, imageStride);
-            // ctx.pixelWriter.setPixels(x, y, charWidth, charHeight, format, matchCharacter.pixels, imageStride);
+            // ctx.pixelWriter.setPixels(x, y, charWidth, charHeight, format, blackWhitePixels, imageStride);
         };
     };
 

@@ -247,30 +247,35 @@ function decolorize(pixels, sampling){
     }
     pixels.rewind();
 
-    // Pick the "middle luminance"
-    // TODO: eliminate duplicates, and really pick the average number, rather than the one "in the middle"
+    // Drop highest and lowest values from luminance array
+    luminances.sort();
+    // trimming 2 from start and end of array seems to yield optimal quality
+    luminances = luminances.slice(2, -2); 
 
-    // Calc average
+    // Calc average luminance
     var sum = 0;
     for(var i = 0; i < luminances.length; i++){
         sum += luminances[i];
     }
     var threshold = Math.round(sum / luminances.length);
 
-    while(pixels.hasRemaining()){
-        pixel = pixels.getInt();
+    var j = 0;
+    for(var i = 0; i < pixels.capacity() / pixelSize; i++){
+
+        pixel = pixels.getInt(i * pixelSize);
         var color = intToRgb(pixel);
         var lum = getPixelLuminance(color.red, color.green, color.blue);
 
-        if(lum > threshold){
-            var newPixel = 0xFFFFFFFF; // white
+        if(lum < threshold){
+            var newPixel = 0x00FFFFFF; // red
         } else {
             var newPixel = 0x000000FF; // black
         }
+        // print("New pixel: " + Integer.toHexString(newPixel));
         newPixels.putInt(newPixel);
+        j++;
     }
     pixels.rewind();
-
     newPixels.flip();
 
     return newPixels;

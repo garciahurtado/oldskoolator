@@ -14,7 +14,7 @@ function paletteExists(filename){
  */
 function loadPalette(filename, ctx) {
     var paletteColors = [];
-    clearCanvas(ctx);
+    clearCanvas(ctx, Color.rgb(200,200,200));
    
     var rootPath = './res/palettes/';
     var file = new File(rootPath + filename);

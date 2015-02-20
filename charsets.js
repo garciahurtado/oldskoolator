@@ -28,7 +28,7 @@ function loadCharsetNames(){
  */
 function loadCharset(filename, ctx) {
     var charImages = [];
-    clearCanvas(ctx);
+    clearCanvas(ctx, Color.rgb(200,200,200));
    
     // Read in all character set images in the /res/ directory
     var rootPath = './res/charsets/';

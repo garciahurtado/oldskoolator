@@ -76,10 +76,10 @@ function start(stage) {
  */
 function attachListeners(stage) {
     var charsetPreview = stage.scene.lookup("#charsetPreview").graphicsContext2D;
-    clearCanvas(charsetPreview);
+    clearCanvas(charsetPreview, Color.rgb(200,200,200));
 
     var palettePreview = stage.scene.lookup("#palettePreview").graphicsContext2D;
-    clearCanvas(palettePreview); 
+    clearCanvas(palettePreview, Color.rgb(200,200,200)); 
 
     var userImage = stage.scene.lookup("#userImage");
     stage.scene.lookup("#loadImage").onAction = function(){
@@ -141,7 +141,8 @@ function attachListeners(stage) {
             ctx.setFill(Color.rgb(255,0,0));
             ctx.fillRect(x, y, charWidth, charHeight);
 
-            var matchCharacter = findMatchingCharacter(blockPixels, charImages, charWidth, charHeight, 4);
+            var blackWhitePixels = decolorize(blockPixels, 4);
+            var matchCharacter = findMatchingCharacter(blackWhitePixels, charImages, charWidth, charHeight, 4);
             matchCharacter.setPixelation(1);
 
             var colorLight = getAvgColor(blockPixels, matchCharacter.pixels);
@@ -152,6 +153,7 @@ function attachListeners(stage) {
             var coloredPixels = colorize(matchCharacter.pixels, colorLight, colorDark);
 
             ctx.pixelWriter.setPixels(x, y, charWidth, charHeight, format, coloredPixels, imageStride);
+            // ctx.pixelWriter.setPixels(x, y, charWidth, charHeight, format, matchCharacter.pixels, imageStride);
         };
     };
 
@@ -171,7 +173,7 @@ function openFileBrowser(stage, imageCanvas){
     var image = loadImageFile(file.toURI());
 
     // Image has been selected by the user, draw it in the preview canvas
-    clearCanvas(imageCanvas);
+    clearCanvas(imageCanvas, Color.rgb(255, 255, 255));
     imageCanvas.drawImage(image, 0, 0);
 
     var tab = stage.scene.lookup("#tabs");

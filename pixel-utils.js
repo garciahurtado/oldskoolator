@@ -181,7 +181,7 @@ function getAvgColor(pixelBlock, mask, inverse){
                 sampledRed += (sampledPixel & 0x0000FF00) >> 8;
                 sampledGreen += (sampledPixel & 0x00FF0000) >> 16;
                 var blue = (sampledPixel & 0xFF000000) >> 24;
-                sampledBlue += blue & 0x000000FF; // fix weird bug when bitshifting 24 bits
+                sampledBlue += blue & 0x000000FF; // fixes weird overflow bug after bitshifting 24 bits
 
                 numSamples++;
             }
@@ -220,6 +220,63 @@ function colorize(pixels, lightColor, darkColor){
 }
 
 /**
+ * Take a ByteBuffer of pixels as input, and identify the lightest and darkest colors in it.
+ * From there, calculate the midpoint of both to use as a threshold in turning the light
+ * pixels into full white and the dark pixels into full black.
+ *
+ * @param pixels ByteBuffer of int32 pixels
+ * @param sampling Level of sampling, the higher the number, the more pixels skipped
+ */
+function decolorize(pixels, sampling){
+    var newPixels = ByteBuffer.allocate(pixels.capacity()); 
+    var pixel;
+    var luminances = [];
+    var pixelSize = 4;
+
+    // Loop through all the pixels in the block to collect luminance levels,
+    // skipping every few pixels as determined by sampling
+    
+    for (var y = 0; y < charHeight; y += sampling) { // For every row...
+        for (var x = 0; x < charWidth; x += sampling) { // For every column...
+            var index = (y * charWidth) + x;
+
+            var sampledPixel = pixels.getInt(index * pixelSize);
+            var color = intToRgb(sampledPixel);
+            luminances.push(getPixelLuminance(color.red, color.green, color.blue));
+        }
+    }
+    pixels.rewind();
+
+    // Pick the "middle luminance"
+    // TODO: eliminate duplicates, and really pick the average number, rather than the one "in the middle"
+
+    // Calc average
+    var sum = 0;
+    for(var i = 0; i < luminances.length; i++){
+        sum += luminances[i];
+    }
+    var threshold = Math.round(sum / luminances.length);
+
+    while(pixels.hasRemaining()){
+        pixel = pixels.getInt();
+        var color = intToRgb(pixel);
+        var lum = getPixelLuminance(color.red, color.green, color.blue);
+
+        if(lum > threshold){
+            var newPixel = 0xFFFFFFFF; // white
+        } else {
+            var newPixel = 0x000000FF; // black
+        }
+        newPixels.putInt(newPixel);
+    }
+    pixels.rewind();
+
+    newPixels.flip();
+
+    return newPixels;
+}
+
+/**
  * Convert a Java Color object into an BGRA int32
  */
 function colorToInt(color){
@@ -233,9 +290,21 @@ function colorToInt(color){
 }
 
 /**
+ * Takes an int32 pixel as input and decomposes it into the RGB components by returning 
+ * a javascript literal with red, green and blue elements
+ */
+function intToRgb(int32pixel){
+    var red = (int32pixel & 0x0000FF00) >> 8;
+    var green = (int32pixel & 0x00FF0000) >> 16;
+    var blue = ((int32pixel & 0xFF000000) >> 24) & 0x000000FF; // fixes weird overflow bug after bitshifting 24 bits
+
+    return {red: red, green: green, blue: blue};
+}
+
+/**
  * Clear a canvas with a medium grey. Used when switching charsets or loading a user image.
  */
-function clearCanvas(ctx){
-    ctx.setFill(Color.rgb(200,200,200));
+function clearCanvas(ctx, color){
+    ctx.setFill(color);
     ctx.fillRect(0,0,ctx.canvas.width,ctx.canvas.height);
 }

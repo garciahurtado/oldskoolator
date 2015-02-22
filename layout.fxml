@@ -14,22 +14,26 @@
             <Insets bottom="8.0" left="8.0" right="8.0" top="8.0" />
          </opaqueInsets>
          <children>
-            <Label text="ASCII Image Generator">
-               <font>
-                  <Font size="32.0" />
-               </font>
-               <VBox.margin>
-                  <Insets left="10.0" />
-               </VBox.margin>
-            </Label>
-            <HBox alignment="BASELINE_RIGHT" prefHeight="30.0" prefWidth="200.0">
+            <VBox styleClass="header">
                <children>
-                  <Button id="loadImage" mnemonicParsing="false" text="Load image..." />
+                  <Label text="Oldskoolator" textFill="#5b5149">
+                     <font>
+                        <Font name="MicrogrammaDBolExt" size="35.0" />
+                     </font>
+                     <VBox.margin>
+                        <Insets left="10.0" />
+                     </VBox.margin>
+                  </Label>
+                  <HBox alignment="BASELINE_RIGHT" prefHeight="30.0" prefWidth="200.0">
+                     <children>
+                        <Button id="loadImage" mnemonicParsing="false" text="Load image..." />
+                     </children>
+                     <VBox.margin>
+                        <Insets bottom="5.0" left="5.0" right="5.0" top="5.0" />
+                     </VBox.margin>
+                  </HBox>
                </children>
-               <VBox.margin>
-                  <Insets bottom="5.0" left="5.0" right="5.0" top="5.0" />
-               </VBox.margin>
-            </HBox>
+            </VBox>
             <TabPane fx:id="tabs" prefHeight="200.0" prefWidth="200.0" tabClosingPolicy="UNAVAILABLE" VBox.vgrow="ALWAYS">
               <tabs>
                 <Tab text="Character Set">

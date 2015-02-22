@@ -25,7 +25,7 @@ load("pixel-utils.js");
 load("ascii-char.js");
 
 /**
- * ==== Olskulator ====
+ * ==== Oldskoolator ====
  *
  * Desktop app which parses a raster image, and converts it to an ASCII art version of it.
  * 
@@ -63,7 +63,7 @@ function start(stage) {
     var layout = new File(__DIR__ + "layout.fxml");
     var root = FXMLLoader.load(layout.toURL());
     stage.scene = new Scene(root, 527, 677);
-    stage.title = "ASCII Art Maker";
+    stage.title = "Oldskoolator";
 
     // Load CSS file
     var cssFile = new File(__DIR__ + "style.css");
@@ -149,8 +149,10 @@ function attachListeners(stage) {
 
             var colorLight = getAvgColor(blockPixels, matchCharacter.pixels);
             var colorDark = getAvgColor(blockPixels, matchCharacter.pixels, true);
-            colorLight = findClosestColor(colorLight, palette);
+
+            // TODO: implement sensible "color deduping" to avoid both light and dark colors mapping to the same palette color
             colorDark = findClosestColor(colorDark, palette);
+            colorLight = findClosestColor(colorLight, palette);
 
             var coloredPixels = colorize(matchCharacter.pixels, colorLight, colorDark);
 

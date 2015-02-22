@@ -14,3 +14,10 @@
 .grey-box {
   -fx-background-color: #EEEEEE;
 }
+
+.header {
+  -fx-background-color: #c2b498;
+  -fx-background-image: url('./res/ui/header-bg.png');
+  -fx-background-repeat: no-repeat;
+  -fx-background-position: top right;
+}

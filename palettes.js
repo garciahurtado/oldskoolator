@@ -92,3 +92,20 @@ function getColorDistance(colorA, colorB){
 
     return Math.sqrt(weightRed*red*red + weightGreen*green*green + weightBlue*blue*blue);
 }
+
+/**
+ * In order to avoid returning the same color for both the light and dark area of a block, we 
+ * need a way to remove an already picked color from our existing palette.
+ *
+ * This function returns a new palette with parameter color removed
+ */
+function removeFromPalette(palette, removeColor){
+    var newPalette = [];
+    for each(var color in palette){
+        if(color != removeColor){
+            newPalette.push(color);
+        }
+    }
+
+    return newPalette;
+}

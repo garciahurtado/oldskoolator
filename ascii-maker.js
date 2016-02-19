@@ -147,6 +147,7 @@ function attachListeners(stage) {
             var matchCharacter = findMatchingCharacter(blackWhitePixels, charImages, charWidth, charHeight, 4);
             matchCharacter.setPixelation(1);
 
+            // TODO: Averaging the colors under the 2bit character mask is producing undesired antialiasing
             var colorLight = getAvgColor(blockPixels, matchCharacter.pixels);
             var colorDark = getAvgColor(blockPixels, matchCharacter.pixels, true);
 
@@ -161,8 +162,8 @@ function attachListeners(stage) {
         };
     };
 
-    var elapsedTime = System.nanoTime() - startTime;
-    print("Image converted in " + elapsedTime / Math.pow(10, 9) + " seconds");
+    var elapsedTime = (System.nanoTime() - startTime) / Math.pow(10, 9); // convert to seconds 
+    print("Image converted in " + elapsedTime  + " seconds");
  }
 
 /**
